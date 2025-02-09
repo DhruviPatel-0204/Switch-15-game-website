@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switch-15 Game</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-section,
+        .grid-selection {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .canvas-container {
+            display: grid;
+            margin: auto;
+            
+            width: fit-content;
+            background-color: #f0f0f0;
+            background-position: cover;
+        }
+
+        .grid-cell {
+            border: 2px solid black; 
+            background-size: cover;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        .cell-number {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Switch-15 Game</h1>
+</header>
+
+<section class="upload-section">
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" class="file-input">
+        
+        <button type="submit" class="upload-button">Upload Image</button>
+    </form>
+</section>
+
+<section class="grid-selection">
+    <form id="gridForm">
+        <p>Select grid size:</p>
+        <label><input type="radio" name="gridSize" value="3" required> 3x3</label><br>
+        <label><input type="radio" name="gridSize" value="4"> 4x4</label><br>
+        <label><input type="radio" name="gridSize" value="5"> 5x5</label><br>
+        <label for="gridColor">Grid Line & Number Color:</label>
+        <input type="color" id="gridColor" value="#Ff0000">
+        <button type="button" id="colorApplyButton">OK</button> 
+        <br><br>
+        
+        <button type="submit" class="grid-button">START GAME</button>
+    </form>
+</section>
+
+<section class="canvas-container" id="canvasContainer">
+    <img id="uploadedImage" src="<%= imageUrl %>" alt="Uploaded Image">
+</section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const gridForm = document.getElementById("gridForm");
+    const canvasContainer = document.getElementById("canvasContainer");
+    const uploadedImage = document.getElementById("uploadedImage");
+    const gridColorInput = document.getElementById("gridColor");
+    const colorApplyButton = document.getElementById("colorApplyButton");
+    let selectedColor = "#Ff0000"; 
+    gridColorInput.addEventListener("input", function () {
+        selectedColor = gridColorInput.value;
+    });
+    colorApplyButton.addEventListener("click", function () {
+        selectedColor = gridColorInput.value;
+    });
+
+    uploadedImage.onload = function () {
+        const maxWidth = 400;
+        const scale = Math.min(maxWidth / uploadedImage.width, 1);
+        const scaledWidth = uploadedImage.width * scale;
+        const scaledHeight = uploadedImage.height * scale;
+
+        canvasContainer.style.width = `${scaledWidth}px`;
+        canvasContainer.style.height = `${scaledHeight}px`;
+
+        gridForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            canvasContainer.innerHTML = "";
+
+            const gridSize = parseInt(document.querySelector('input[name="gridSize"]:checked').value);
+
+            canvasContainer.style.display = "grid";
+            canvasContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            canvasContainer.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+            createGrid(scaledWidth, scaledHeight, gridSize);
+        });
+    };
+
+    uploadedImage.onerror = function () {
+        console.error("Image failed to load.");
+    };
+
+    function createGrid(width, height, gridSize) {
+    const cellWidth = width / gridSize;
+    const cellHeight = height / gridSize;
+    const totalCells = gridSize * gridSize;
+    let cellNumber = 1;
+    const cellData = [];
+    let emptyCell = null; 
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            if (cellNumber < totalCells) {
+                cellData.push({
+                    row,
+                    col,
+                    number: cellNumber++,
+                });
+            } else {
+                cellData.push({
+                    row,
+                    col,
+                    number: null, 
+                });
+                emptyCell = { row, col }; 
+            }
+        }
+    }
+    do {
+        shuffleArray(cellData);
+    } while (!isSolvable(cellData, gridSize));
+    const gridCells = [];
+    for (let row = 0; row < gridSize; row++) {
+        gridCells[row] = [];
+        for (let col = 0; col < gridSize; col++) {
+            const cellInfo = cellData.shift(); 
+            const cell = document.createElement("div");
+            cell.className = "grid-cell";
+            cell.style.width = `${cellWidth}px`;
+            cell.style.height = `${cellHeight}px`;
+            cell.style.backgroundImage = `url(${uploadedImage.src})`;
+            cell.style.backgroundSize = `${width}px ${height}px`;
+            cell.style.backgroundPosition = `-${cellInfo.col * cellWidth}px -${cellInfo.row * cellHeight}px`;
+            cell.style.borderColor = selectedColor;
+
+            if (cellInfo.number !== null) {
+                const number = document.createElement("div");
+                number.className = "cell-number";
+                number.textContent = cellInfo.number;
+                number.style.color = selectedColor;
+                cell.appendChild(number);
+            } else {
+                cell.classList.add("empty-cell");
+                emptyCell = { row, col }; 
+            }
+            canvasContainer.appendChild(cell);
+            gridCells[row][col] = cell;
+            cell.addEventListener("click", () => handleCellClick(row, col, gridCells, gridSize, emptyCell));
+        }
+    }
+}
+function handleCellClick(row, col, gridCells, gridSize, emptyCell) {
+    const { row: emptyRow, col: emptyCol } = emptyCell;
+    if (
+        (row === emptyRow && Math.abs(col - emptyCol) === 1) || 
+        (col === emptyCol && Math.abs(row - emptyRow) === 1)    
+        
+    ) {
+        const clickedCell = gridCells[row][col];
+        const emptyGridCell = gridCells[emptyRow][emptyCol];
+
+        const tempBackgroundImage = clickedCell.style.backgroundImage;
+        const tempBackgroundPosition = clickedCell.style.backgroundPosition;
+
+        emptyGridCell.style.backgroundImage = tempBackgroundImage;
+        emptyGridCell.style.backgroundPosition = tempBackgroundPosition;
+
+        clickedCell.style.backgroundImage = null;
+        clickedCell.style.backgroundPosition = null;
+        const clickedNumber = clickedCell.querySelector(".cell-number");
+        const emptyNumber = emptyGridCell.querySelector(".cell-number");
+
+        if (clickedNumber) {
+            emptyGridCell.appendChild(clickedNumber);
+            if (emptyNumber) {
+                clickedCell.appendChild(emptyNumber);
+            }
+        }
+        emptyCell.row = row;
+        emptyCell.col = col;
+        clickedCell.classList.add("empty-cell");
+        emptyGridCell.classList.remove("empty-cell");
+        if (checkWinCondition(gridCells, gridSize)) {
+            setTimeout(() => {
+                alert("Congratulations! You solved the puzzle!");
+            }, 200);
+        }
+    }
+}
+
+function checkWinCondition(gridCells, gridSize) {
+    let expectedNumber = 1;
+
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            const cellNumberElement = gridCells[row][col].querySelector(".cell-number");
+            if (row === gridSize - 1 && col === gridSize - 1) {
+                if (cellNumberElement !== null) return false;
+            } else {
+                if (!cellNumberElement || parseInt(cellNumberElement.textContent) !== expectedNumber) {
+                    return false;
+                }
+                expectedNumber++;
+            }
+        }
+    }
+
+    return true;
+}
+function isSolvable(cellData, gridSize) {
+    const flatArray = cellData.map((cell) => cell.number || 0); 
+    const invCount = getInvCount(flatArray);
+    if (gridSize % 2 !== 0) {
+        return invCount % 2 === 0; 
+    } else {
+        const emptyRowFromBottom = gridSize - cellData.find((cell) => cell.number === null).row;
+        if (emptyRowFromBottom % 2 === 0) {
+            return invCount % 2 !== 0; 
+        } else {
+            return invCount % 2 === 0; 
+        }
+    }
+}
+function getInvCount(arr) {
+    let invCount = 0;
+    for (let i = 0; i < arr.length - 1; i++) {
+        for (let j = i + 1; j < arr.length; j++) {
+            if (arr[i] && arr[j] && arr[i] > arr[j]) {
+                invCount++;
+            }
+        }
+    }
+    return invCount;
+}
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+});
+
+</script>
+
+</body>
+</html>

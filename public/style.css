@@ -1,0 +1,81 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+/* Header */
+header {
+    text-align: center;
+    padding: 20px;
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* Section Styles */
+section {
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 800px;
+    background: white;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Upload Section */
+.upload-section {
+    text-align: center;
+}
+
+.file-input {
+    margin: 10px 0;
+}
+
+.upload-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.upload-button:hover {
+    background-color: #45a049;
+}
+
+/* Grid Selection Section */
+.grid-selection p {
+    margin-bottom: 10px;
+}
+
+.grid-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.grid-button:hover {
+    background-color: #0056b3;
+}
+
+/* Canvas Container */
+.canvas-container {
+    text-align: center;
+}
+
+canvas {
+    border: 1px solid #ccc;
+    margin: 20px auto;
+    display: block;
+    max-width: 100%;
+}
